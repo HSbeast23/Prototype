@@ -1,0 +1,12 @@
+{
+  "trains": [
+    { "id": "T101", "name": "Express A", "priority": 1 },
+    { "id": "T102", "name": "Local B", "priority": 2 },
+    { "id": "T103", "name": "Freight C", "priority": 3 }
+  ],
+  "schedules": [
+    { "trainId": "T101", "startTime": "10:00", "endTime": "10:30" },
+    { "trainId": "T102", "startTime": "10:20", "endTime": "10:50" },
+    { "trainId": "T103", "startTime": "10:40", "endTime": "11:10" }
+  ]
+}
