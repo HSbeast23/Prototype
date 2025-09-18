@@ -28,20 +28,115 @@ const createStationIcon = (routeType, isJunction = false) => {
   });
 };
 
+// Calculate offset coordinates for parallel tracks
+const calculateOffset = (coord1, coord2, offsetDistance) => {
+  const dx = coord2[1] - coord1[1]; // longitude difference
+  const dy = coord2[0] - coord1[0]; // latitude difference
+  const length = Math.sqrt(dx * dx + dy * dy);
+  
+  if (length === 0) return { left: coord1, right: coord1 };
+  
+  const unitX = -dy / length; // perpendicular unit vector
+  const unitY = dx / length;
+  
+  const leftOffset = [
+    coord1[0] + unitY * offsetDistance,
+    coord1[1] + unitX * offsetDistance
+  ];
+  const rightOffset = [
+    coord1[0] - unitY * offsetDistance,
+    coord1[1] - unitX * offsetDistance
+  ];
+  
+  return { left: leftOffset, right: rightOffset };
+};
+
+// Create parallel track coordinates
+const createParallelTracks = (coordinates, offsetDistance = 0.0003) => {
+  const leftTrack = [];
+  const rightTrack = [];
+  
+  for (let i = 0; i < coordinates.length; i++) {
+    if (i === 0 && coordinates.length > 1) {
+      // First point - use direction to next point
+      const offset = calculateOffset(coordinates[i], coordinates[i + 1], offsetDistance);
+      leftTrack.push(offset.left);
+      rightTrack.push(offset.right);
+    } else if (i === coordinates.length - 1) {
+      // Last point - use direction from previous point
+      const offset = calculateOffset(coordinates[i - 1], coordinates[i], offsetDistance);
+      leftTrack.push(offset.left);
+      rightTrack.push(offset.right);
+    } else {
+      // Middle points - average the offsets from both directions
+      const offset1 = calculateOffset(coordinates[i - 1], coordinates[i], offsetDistance);
+      const offset2 = calculateOffset(coordinates[i], coordinates[i + 1], offsetDistance);
+      
+      const avgLeft = [
+        (offset1.left[0] + offset2.left[0]) / 2,
+        (offset1.left[1] + offset2.left[1]) / 2
+      ];
+      const avgRight = [
+        (offset1.right[0] + offset2.right[0]) / 2,
+        (offset1.right[1] + offset2.right[1]) / 2
+      ];
+      
+      leftTrack.push(avgLeft);
+      rightTrack.push(avgRight);
+    }
+  }
+  
+  return { leftTrack, rightTrack };
+};
+
 const RouteLayer = ({ route, trains = [], visible = true, showStations = true, junctionStations = [] }) => {
   if (!visible || !route) return null;
   
   const coordinates = getRouteCoordinates(route.id);
+  const { leftTrack, rightTrack } = createParallelTracks(coordinates);
   
   return (
     <>
-      {/* Route polyline */}
+      {/* Railway Track Base (Ballast) */}
+      <Polyline
+        positions={coordinates}
+        color="#8B7355"
+        weight={8}
+        opacity={0.6}
+      />
+      
+      {/* Railway Sleepers/Ties */}
+      <Polyline
+        positions={coordinates}
+        color="#654321"
+        weight={6}
+        opacity={0.8}
+        dashArray="3, 8"
+      />
+      
+      {/* Left Rail */}
+      <Polyline
+        positions={leftTrack}
+        color="#2C3E50"
+        weight={2}
+        opacity={0.9}
+      />
+      
+      {/* Right Rail */}
+      <Polyline
+        positions={rightTrack}
+        color="#2C3E50"
+        weight={2}
+        opacity={0.9}
+      />
+      
+      {/* Route Color Identifier Line (center) */}
       <Polyline
         positions={coordinates}
         color={route.color}
-        weight={route.type === 'suburban' ? 3 : 4}
+        weight={3}
         opacity={0.8}
-        dashArray={route.type === 'suburban' ? "5, 5" : "10, 5"}
+        dashArray={route.type === 'suburban' ? "5, 5" : route.type === 'intercity' ? "8, 3" : "10, 2"}
       />
       
       {/* Station markers */}
