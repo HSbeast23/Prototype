@@ -50,6 +50,7 @@ const interpolatePosition = (start, end, progress) => {
 const EnhancedTrainMarker = ({ 
   train, 
   route,
+  onTrainClick,
   onTrainUpdate, 
   simulationSpeed = 1 
 }) => {
@@ -72,6 +73,12 @@ const EnhancedTrainMarker = ({
 
   const currentPosition = getCurrentPosition();
 
+  const handleClick = () => {
+    if (onTrainClick) {
+      onTrainClick(train.id);
+    }
+  };
+
   const getStatusIcon = (status) => {
     if (status === 'stopped') return <StopCircle className="h-5 w-5 text-gray-500" />;
     if (status === 'on-time') return <Activity className="h-5 w-5 text-green-500" />;
@@ -90,6 +97,9 @@ const EnhancedTrainMarker = ({
     <Marker 
       position={[currentPosition.lat, currentPosition.lng]} 
       icon={createTrainIcon(train.status, train.delay || 0, route.color)}
+      eventHandlers={{
+        click: handleClick
+      }}
     >
       <Popup>
         <div className="font-sans min-w-48">
